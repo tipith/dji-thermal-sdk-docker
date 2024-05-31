@@ -1,33 +1,18 @@
 # syntax=docker/dockerfile:1
-FROM --platform=linux/amd64 ubuntu:22.04
+FROM ubuntu:latest
 
-ARG URL="https://dl.djicdn.com/downloads/dji_thermal_sdk/20221108/dji_thermal_sdk_v1.4_20220929.zip"
-
-COPY <<"EOF1" /tmp/diff.patch
-diff -Naur dji_thermal_sdk_v1.4_20220929/sample/dji_ircm.cpp dji_thermal_sdk_v1.4_20220929_patched/sample/dji_ircm.cpp
---- dji_thermal_sdk_v1.4_20220929/sample/dji_ircm.cpp	2022-09-29 06:47:04
-+++ dji_thermal_sdk_v1.4_20220929_patched/sample/dji_ircm.cpp	2022-11-19 02:02:36
-@@ -29,6 +29,7 @@
- #include <iterator>
- #include <vector>
- #include <string.h>
-+#include <math.h>
- #include <sys/stat.h>
- 
- #include "dirp_api.h"
-EOF1
+ARG URL="https://terra-1-g.djicdn.com/2640963bcd8e45c0a4f0cb9829739d6b/TSDK/v1.5%20(10.0.1-EA220%E7%BA%A2%E5%A4%96%E4%BA%8C%E4%BE%9B%E3%80%8110.0-EP300)/dji_thermal_sdk_v1.5_20240507.zip"
 
 RUN apt-get update
-RUN apt-get -y install wget unzip cmake libc6-dev-i386 g++-multilib patch imagemagick exiftool
+RUN apt-get -y install wget unzip libtiff-tools g++-multilib imagemagick exiftool
 
-RUN <<"EOF2"
-mkdir -p /app/djithermal
-cd /app/djithermal
-wget "$URL" -O dji_thermal_sdk.zip
-unzip dji_thermal_sdk.zip
-patch -s -p1 < /tmp/diff.patch
-chmod +x sample/build.sh
-./sample/build.sh
-cp sample/build/Release_x64/*.so /usr/lib
-cp sample/build/Release_x64/dji_* /usr/bin
-EOF2
+RUN mkdir -p /app/djithermal
+RUN wget "$URL" -O /app/djithermal/dji_thermal_sdk.zip
+RUN cd /app/djithermal && unzip /app/djithermal/dji_thermal_sdk.zip
+RUN chmod a+rx /app/djithermal/utility/bin/linux/release_x64/*
+RUN chmod a+rx /app/djithermal/tsdk-core/lib/linux/release_x64/*
+
+RUN cp /app/djithermal/tsdk-core/lib/linux/release_x64/* /usr/lib
+RUN cp /app/djithermal/utility/bin/linux/release_x64/* /usr/bin
+
+ENV PATH="${PATH}:/app/djithermal/utility/bin/linux/release_x64"

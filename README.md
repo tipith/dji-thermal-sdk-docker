@@ -4,6 +4,11 @@
 
 Dockerized [DJI Thermal SDK](https://www.dji.com/downloads/softwares/dji-thermal-sdk), which includes example tools for processing and measuring some DJI thermal images.
 
+## Prequisites
+
+1. For Windows, follow the installation instructions at https://docs.docker.com/desktop/install/windows-install/
+2. Clone this repo
+
 ## Installation
 
 ```sh
@@ -12,67 +17,16 @@ docker build -t djithermal .
 
 ## Commands
 
-```sh
-docker run -i \
-  djithermal \
-  dji_irp --help
-```
+Convert all R-JPGs from INPUT_DIR to tiff at OUTPUT_DIR. Pixel format is float and preserves exif tags.
 
-## Process an image to psuedocolor
-
-```sh
-docker run -i \
-  -v "$(pwd)":"$(pwd)" -w "$(pwd)" \
-  djithermal \
-  dji_irp -a process \
-    --palette iron_red \
-    --colorbar on,40,25 \
-    --source /app/djithermal/dataset/M30T/DJI_0001_R.JPG \
-    --output process.rgb
-convert -depth 8 -size 640x512 RGB:process.rgb process.jpg
-```
-
-## Extract a raw float32 thermal
-
-```sh
-docker run -i \
-  -v "$(pwd)":"$(pwd)" -w "$(pwd)" \
-  djithermal \
-  dji_irp -a measure \
-    --measurefmt float32 \
-    --distance 25 \
-    --humidity 77 \
-    --emissivity 0.98 \
-    --reflection 23 \
-    --source DJI_0001_R.JPG \
-    --output measure.raw
-```
-
-## Process all images in the current directory, copying exif metadata from the original file
-
-```sh
-docker run -i \
-  -v "$(pwd)":"$(pwd)" -w "$(pwd)" \
-  djithermal \
-  /bin/sh -c 'mkdir -p process && mkdir -p raw
-  for i in *.JPG; do
-    dji_irp -a process \
-      --palette iron_red \
-      --colorbar on,44,0 \
-      --source "$i" \
-      --output "$(pwd)/process/$(basename $i .JPG).rgb"
-    convert -depth 8 -size 640x512 \
-      RGB:"$(pwd)/process/$(basename $i .JPG).rgb" \
-      "$(pwd)/process/$(basename $i)"
-    rm "$(pwd)/process/$(basename $i .JPG).rgb"
-    exiftool -overwrite_original -TagsFromFile "$i" -all:all "$(pwd)/process/$(basename $i)"
-    dji_irp -a measure \
-      --measurefmt float32 \
-      --distance 25 \
-      --humidity 77 \
-      --emissivity 0.98 \
-      --reflection 23 \
-      --source "$i" \
-      --output "$(pwd)/raw/$(basename $i .JPG).raw"
-  done'
+```powershell
+docker run `
+    --network none `
+    -v C:\dji-thermal-sdk-docker:/work `
+    -v C:\my\path\to\input-jpg:/pics_in `
+    -v C:\my\path\to\output-tiff:/pics_out `
+    -w /work `
+    -i `
+    tipith/djithermal:v1 `
+        /bin/bash -c "ls -l /pics_in; chmod +x work.sh; sed -i $'s/\r$//' ./work.sh; ./work.sh /pics_in /pics_out"
 ```
